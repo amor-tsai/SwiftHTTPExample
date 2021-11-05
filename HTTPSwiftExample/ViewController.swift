@@ -15,7 +15,7 @@
 //    ifconfig |grep inet   
 // to see what your public facing IP address is, the ip address can be used here
 //let SERVER_URL = "http://erics-macbook-pro.local:8000" // change this for your server name!!!
-let SERVER_URL = "http://10.0.1.6:8000" // change this for your server name!!!
+let SERVER_URL = "http://192.168.1.120:8000" // change this for your server name!!!
 
 import UIKit
 import CoreMotion
@@ -54,6 +54,8 @@ class ViewController: UIViewController, URLSessionDelegate {
     @IBOutlet weak var downArrow: UILabel!
     @IBOutlet weak var leftArrow: UILabel!
     @IBOutlet weak var largeMotionMagnitude: UIProgressView!
+    // MARK: use this slider to adjust the value of DSID
+    @IBOutlet weak var dsidAdjustment: UISlider!
     
     // MARK: Class Properties with Observers
     enum CalibrationStage {
@@ -129,6 +131,7 @@ class ViewController: UIViewController, URLSessionDelegate {
     
     @IBAction func magnitudeChanged(_ sender: UISlider) {
         self.magValue = Double(sender.value)
+        print(self.magValue)
     }
     
     // MARK: Core Motion Updates
@@ -251,11 +254,16 @@ class ViewController: UIViewController, URLSessionDelegate {
         animation.type = CATransitionType.fade
         animation.duration = 0.5
         
+        self.dsidAdjustment.value = Float(self.dsid)
+        
+        // set the range of dsid value adjusted
+        self.dsidAdjustment.minimumValue = 1
+        self.dsidAdjustment.maximumValue = 30
         
         // setup core motion handlers
         startMotionUpdates()
         
-        dsid = 1 // set this and it will update UI
+//        dsid = 1 // set this and it will update UI
     }
 
     //MARK: Get New Dataset ID
@@ -263,8 +271,11 @@ class ViewController: UIViewController, URLSessionDelegate {
         // create a GET request for a new DSID from server
         let baseURL = "\(SERVER_URL)/GetNewDatasetId"
         
+//        dsid += 1
+        
         let getUrl = URL(string: baseURL)
         let request: URLRequest = URLRequest(url: getUrl!)
+        
         let dataTask : URLSessionDataTask = self.session.dataTask(with: request,
             completionHandler:{(data, response, error) in
                 if(error != nil){
@@ -272,6 +283,7 @@ class ViewController: UIViewController, URLSessionDelegate {
                 }
                 else{
                     let jsonDictionary = self.convertDataToDictionary(with: data)
+                    print(jsonDictionary)
                     
                     // This better be an integer
                     if let dsid = jsonDictionary["dsid"]{
@@ -290,6 +302,11 @@ class ViewController: UIViewController, URLSessionDelegate {
         self.isWaitingForMotionData = false // dont do anything yet
         nextCalibrationStage()
         
+    }
+    // MARK: to adjust DSID
+    @IBAction func adjustDSID(_ sender: UISlider) {
+        dsid = Int(sender.value)
+        print(dsid)
     }
     
     //MARK: Comm with Server
@@ -356,9 +373,9 @@ class ViewController: UIViewController, URLSessionDelegate {
                         }
                         else{ // no error we are aware of
                             let jsonDictionary = self.convertDataToDictionary(with: data)
-                            
+                            print("jsonDic: \(jsonDictionary)")
                             let labelResponse = jsonDictionary["prediction"]!
-                            print(labelResponse)
+                            print("labelResponse: \(labelResponse)")
                             self.displayLabelResponse(labelResponse as! String)
 
                         }
